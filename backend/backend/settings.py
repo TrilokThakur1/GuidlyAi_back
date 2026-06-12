@@ -16,7 +16,7 @@ SECRET_KEY = 'django-insecure-v5#iap-8qcv*-hzny&08!4c4xuz$zps&ro%1o+519g5wvgcfpp
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "guidlyaii-backend1.onrender.com",
+    "guidlyai-back-1.onrender.com",
     ".onrender.com",
     "localhost",
     "127.0.0.1",
@@ -58,7 +58,6 @@ CORS_ALLOWED_ORIGINS = [
     "https://guidlyaii.onrender.com",
     "http://localhost:5174",
 ]
-
 
 
 CORS_ALLOW_ALL_ORIGINS = True   
