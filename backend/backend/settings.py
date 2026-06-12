@@ -17,7 +17,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     "guidlyai-back-1.onrender.com",
-    ".onrender.com",
     "localhost",
     "127.0.0.1",
 ]
@@ -44,7 +43,8 @@ JWT_SECRET = "d0431cc4fbc025bf7e4b95796aa8f202f57380da345edc0e2e52dcb7195dfa08"
 JWT_ALGORITHM = "HS256"
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',   # MUST be first
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",,   # MUST be first
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -56,7 +56,6 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "https://guidlyaii.onrender.com",
-    "http://localhost:5174",
 ]
 
 
