@@ -101,28 +101,46 @@ def RegisterView(request):
 
 @api_view(['POST'])
 def LoginView(request):
-    email = request.data['email']
-    password = request.data['password']
-    
+    email = request.data.get('email')
+    password = request.data.get('password')
+
+    if not email:
+        return Response(
+            {"message": "Email is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not password:
+        return Response(
+            {"message": "Password is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
     user = users_collection.find_one({"email": email})
-    
-    if user:
-        if check_password(password, user['password']):
-            acess_Token = generate_access_token({"email": email})
-            refresh_Token = generate_refresh_token({"email":email})
-            
-            return Response({
-                "message": "User Logged In Successfully",
-                "refresh_token": refresh_Token,
-                "access_token": acess_Token
-                }, status=status.HTTP_200_OK)
-        else:
-            return Response({
-                "message": "Invalid Password"
-                }, status=status.HTTP_401_UNAUTHORIZED)
-    
 
+    if not user:
+        return Response(
+            {"message": "User not found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
 
+    if not check_password(password, user['password']):
+        return Response(
+            {"message": "Invalid Password"},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    access_token = generate_access_token({"email": email})
+    refresh_token = generate_refresh_token({"email": email})
+
+    return Response(
+        {
+            "message": "User Logged In Successfully",
+            "refresh_token": refresh_token,
+            "access_token": access_token
+        },
+        status=status.HTTP_200_OK
+    )
 
 @api_view(['GET'])
 def UserDetails(request):
