@@ -53,11 +53,15 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = False
 
 CORS_ALLOWED_ORIGINS = [
     "https://guidlyaii.onrender.com",
 ]
+
+CORS_ALLOW_CREDENTIALS =  [
+    "https://guidlyaii.onrender.com",
+]
+
 
 ROOT_URLCONF = 'backend.urls'
 
