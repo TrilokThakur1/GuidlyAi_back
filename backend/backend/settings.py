@@ -56,10 +56,8 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
-    'https://guidlyai.onrender.com', # Make sure your production frontend URL is here too!
+    "https://guidlyaii.onrender.com", # Make sure your production frontend URL is here too!
+
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
