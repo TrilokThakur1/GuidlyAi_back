@@ -30,7 +30,16 @@ class UserResponce(BaseModel):
 @api_view(['POST'])
 def RegisterView(request):
     try:
+        print("DATA:", request.data)
+        print("FILES:", request.FILES)
+
         serializer = RegisterSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            print(serializer.errors)
+            return Response(
+            serializer.errors,
+            status=400)
 
         if serializer.is_valid():
             data = serializer.validated_data
@@ -61,8 +70,14 @@ def RegisterView(request):
                 "password": hash_password(data['password'])
             })
 
-            return Response({"message": "Success"}, status=status.HTTP_201_CREATED)
+            access_token = generate_access_token({"email": data["email"]})
+            refresh_token = generate_refresh_token({"email": data["email"]})
 
+            return Response({
+                   "message": "Registration successful",
+                   "access_token": access_token,
+                   "refresh_token": refresh_token
+                   }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     except Exception as e:
