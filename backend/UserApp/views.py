@@ -1,246 +1,146 @@
+# views.py
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+import jwt
+from jwt import InvalidTokenError, ExpiredSignatureError
 from pydantic import BaseModel
+
+from backend.settings import JWT_SECRET
 from .jwt_utils import *
 from .utils import *
 from typing import Any, Optional
-from uuid  import UUID
-import os
-from django.conf import settings
-from uuid import uuid4
+from uuid import UUID
+
+# 1. IMPORT CLOUDINARY UPLOADER
+import cloudinary.uploader
 
 from .helper import BaseResponse
-
-#  return Response({
-#           "message": "User Found",
-#           "id": str(user['_id']),
-#           "name": user['name'],
-#           "avatar": user['avatar'],
-#           "email": user['email']  
-#           }, status=status.HTTP_200_OK)
-#    else:
-class UserResponce(BaseModel):
-    id:Optional[UUID]=None
-    name:str
-    avatar:str
-    email:str
-
-
 from .serializer import *
-
 from .db import users_collection
 from .utils import hash_password
+
+class UserResponce(BaseModel):
+    id: Optional[UUID] = None
+    name: str
+    avatar: str
+    email: str
 
 
 @api_view(['POST'])
 def RegisterView(request):
+    try:
+        serializer = RegisterSerializer(data=request.data)
 
-    serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            avatar = data.get('avatar')
 
-    if serializer.is_valid():
+            avatar_url = None
+            if avatar:
+                print("UPLOADING TO CLOUDINARY...")
+                try:
+                    upload_result = cloudinary.uploader.upload(
+                        avatar,
+                        folder="avatars",
+                        resource_type="image"
+                    )
+                    avatar_url = upload_result.get("secure_url")
+                except Exception as cloud_err:
+                    print("CLOUDINARY CONFIG/UPLOAD ERROR:", str(cloud_err))
+                    return Response(
+                        {"error": f"Cloudinary failed: {str(cloud_err)}. Did you set up Env variables on Render?"}, 
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
 
-        data = serializer.validated_data
-
-        avatar = data['avatar']
-
-        # unique filename
-        file_name = f"{uuid4()}_{avatar.name}"
-
-        upload_path = os.path.join(
-            settings.MEDIA_ROOT,
-            "avatars"
-        )
-
-        os.makedirs(upload_path, exist_ok=True)
-
-        file_path = os.path.join(
-            upload_path,
-            file_name
-        )
-
-        # Save Image
-        with open(file_path, 'wb+') as destination:
-            for chunk in avatar.chunks():
-                destination.write(chunk)
-
-        avatar_url = f"/media/avatars/{file_name}"
-
-        newUser = users_collection.insert_one({
-            "name": data['name'],
-            "avatar": avatar_url,
-            "email": data['email'],
-            "password": hash_password(data['password'])
-        })
-
-        if newUser:
-
-            access_token = generate_access_token({
-                "email": data['email']
+            print("SAVING TO MONGO...")
+            newUser = users_collection.insert_one({
+                "name": data['name'],
+                "avatar": avatar_url if avatar_url else "/default-avatar.png", 
+                "email": data['email'],
+                "password": hash_password(data['password'])
             })
 
-            refresh_token = generate_refresh_token({
-                "email": data['email']
-            })
+            return Response({"message": "Success"}, status=status.HTTP_201_CREATED)
 
-            return Response({
-                "message": "User Registered Successfully",
-                "access_token": access_token,
-                "refresh_token": refresh_token
-            })
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response({
-            "message": "Registration Failed"
-        }, status=400)
+    except Exception as e:
+        print("REGISTER CRITICAL EXCEPTION:", str(e))
+        return Response({"error": f"Internal Server Error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    return Response({
-        "message": "Invalid Data",
-        "errors": serializer.errors
-    }, status=400)
-        
 
 @api_view(['POST'])
 def LoginView(request):
-    email = request.data.get('email')
-    password = request.data.get('password')
-
-    if not email:
-        return Response(
-            {"message": "Email is required"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    if not password:
-        return Response(
-            {"message": "Password is required"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    user = users_collection.find_one({"email": email})
-
-    if not user:
-        return Response(
-            {"message": "User not found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-    if not check_password(password, user['password']):
-        return Response(
-            {"message": "Invalid Password"},
-            status=status.HTTP_401_UNAUTHORIZED
-        )
-
-    access_token = generate_access_token({"email": email})
-    refresh_token = generate_refresh_token({"email": email})
-
-    return Response(
-        {
-            "message": "User Logged In Successfully",
-            "refresh_token": refresh_token,
-            "access_token": access_token
-        },
-        status=status.HTTP_200_OK
-    )
-
-@api_view(['GET'])
-def UserDetails(request):
-
     try:
-
-        # -----------------------------
-        # Authorization Check
-        # -----------------------------
-
-        auth_header = request.headers.get("Authorization")
-
-        if not auth_header:
-            response = BaseResponse(
-                success=False,
-                message="Authorization token missing"
-            )
-
-            return Response(
-                response.model_dump(),
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        # -----------------------------
-        # Token Extract
-        # -----------------------------
-
-        token = auth_header.split(" ")[1]
-
-        if token == "null":
-
-            response = BaseResponse(
-                success=False,
-                message="Invalid token"
-            )
-
-            return Response(
-                response.model_dump(),
-                status=status.HTTP_401_UNAUTHORIZED
-            )
-
-        # -----------------------------
-        # Extract Email
-        # -----------------------------
-
-        email = extract_email(token)
+        email = request.data.get('email')
+        password = request.data.get('password')
 
         print("EMAIL:", email)
 
-        # -----------------------------
-        # Find User
-        # -----------------------------
+        user = users_collection.find_one({"email": email})
 
-        user = users_collection.find_one({
-            "email": email
-        })
+        # print("USER:", user)
 
         if not user:
+            return Response({"message": "User not found"}, status=404)
 
-            response = BaseResponse(
-                success=False,
-                message="User not found"
-            )
+        print("STORED PASSWORD:", user.get("password"))
 
-            return Response(
-                response.model_dump(),
-                status=status.HTTP_404_NOT_FOUND
-            )
+        if not check_password(password, user['password']):
+            return Response({"message": "Invalid Password"}, status=401)
 
-        # -----------------------------
-        # Success Response
-        # -----------------------------
+        access_token = generate_access_token({"email": email})
+        refresh_token = generate_refresh_token({"email": email})
 
+        return Response({
+            "message": "User Logged In Successfully",
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        })
+
+    except Exception as e:
+        print("LOGIN ERROR:", str(e))
+        return Response({
+            "error": str(e)
+        }, status=500)
+    
+
+
+
+@api_view(['GET'])
+def UserDetails(request):
+    try:
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or "Bearer " not in auth_header:
+            return Response(BaseResponse(success=False, message="Invalid token").model_dump(), status=401)
+
+        token = auth_header.split(" ")[1]
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        email = payload.get("email")
+
+        user = users_collection.find_one({"email": email})
+        if not user:
+            return Response(BaseResponse(success=False, message="User not found").model_dump(), status=404)
+
+        # 3. SIMPLIFIED USER DATA RESPONSE
+        # Since 'avatar' is now a full hosted URL (https://res.cloudinary.com/...),
+        # we don't need request.build_absolute_uri() anymore. 
         user_data = {
-         "id": str(user["_id"]),
-         "name": user["name"],
-         "avatar": request.build_absolute_uri(user["avatar"]),
-         "email": user["email"]
-         }
+            "id": str(user["_id"]),
+            "name": user["name"],
+            "avatar": user["avatar"],  
+            "email": user["email"]
+        }
+
         response = BaseResponse(
             success=True,
             message="User fetched successfully",
             data=user_data
         )
+        return Response(response.model_dump(), status=status.HTTP_200_OK)
 
-        return Response(
-            response.model_dump(),
-            status=status.HTTP_200_OK
-        )
-
+    except (ExpiredSignatureError, InvalidTokenError):
+        return Response(BaseResponse(success=False, message="Invalid or expired token").model_dump(), status=401)
     except Exception as e:
-
-        print("ERROR:", e)
-
-        response = BaseResponse(
-            success=False,
-            message=str(e)
-        )
-
-        return Response(
-            response.model_dump(),
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        return Response(BaseResponse(success=False, message=str(e)).model_dump(), status=500)

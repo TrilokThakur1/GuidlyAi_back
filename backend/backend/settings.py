@@ -34,6 +34,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    "cloudinary",
+    "cloudinary_storage",
     'UserApp',
     'RoadMap'
 ]
@@ -53,18 +55,28 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-
 CORS_ALLOWED_ORIGINS = [
-    "https://guidlyaii.onrender.com",
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'https://guidlyai.onrender.com', # Make sure your production frontend URL is here too!
 ]
 
-CORS_ALLOW_CREDENTIALS =  [
-    "https://guidlyaii.onrender.com",
-]
+CORS_ALLOW_ALL_ORIGINS = True
+
 
 
 ROOT_URLCONF = 'backend.urls'
 
+from decouple import config
+import cloudinary
+
+cloudinary.config(
+    cloud_name=config("CLOUD_NAME"),
+    api_key=config("API_KEY"),
+    api_secret=config("API_SECRET"),
+    secure = True
+)
 
 TEMPLATES = [
     {
@@ -131,7 +143,7 @@ STATIC_URL = 'static/'
 
 import os
 
-MEDIA_URL = '/media/'   
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 
