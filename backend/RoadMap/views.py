@@ -1,11 +1,12 @@
 import json
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from . import serializer
 import traceback
 
+# pyrefly: ignore [missing-import]
 from .utils.AskAi import askAi
 
+# pyrefly: ignore [missing-import]
 from .db import RoadMaps_collection
 
 @api_view(['POST'])

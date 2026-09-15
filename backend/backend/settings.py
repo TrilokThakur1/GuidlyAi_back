@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     "cloudinary",
     "cloudinary_storage",
     'UserApp',
-    'RoadMap'
+    'RoadMap',
+    'NewsApp',
 ]
 
 JWT_SECRET = "d0431cc4fbc025bf7e4b95796aa8f202f57380da345edc0e2e52dcb7195dfa08"
@@ -71,6 +72,10 @@ ROOT_URLCONF = 'backend.urls'
 
 from decouple import config
 import cloudinary
+
+NEWS_API_KEY = config("NEWS_API_KEY", default="")
+
+
 
 cloudinary.config(
     cloud_name=config("CLOUD_NAME"),
@@ -146,5 +151,6 @@ import os
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 
 

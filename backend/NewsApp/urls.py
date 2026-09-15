@@ -1,9 +1,7 @@
 from django.urls import path
-
 # pyrefly: ignore [missing-import]
 from . import views
 
 urlpatterns = [
-    path('plan', views.RoadMapView),
-    path("myPlans",views.MyPlans)
+    path("tech/", views.TechNewsView),
 ]

@@ -7,4 +7,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/roadmap/', include('RoadMap.urls')),
     path('api/auth/', include('UserApp.urls')),
+    path('api/news/', include('NewsApp.urls')),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
