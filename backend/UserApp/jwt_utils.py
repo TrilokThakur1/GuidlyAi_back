@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 def generate_access_token(payload):
     payload = payload.copy()
     payload["type"] = "access"
-    payload["exp"] = datetime.utcnow() + timedelta(minutes=15)
+    payload["exp"] = datetime.utcnow() + timedelta(minutes=520)
 
     return jwt.encode(
         payload,
@@ -17,7 +17,7 @@ def generate_access_token(payload):
 def generate_refresh_token(payload):
     payload = payload.copy()
     payload["type"] = "refresh"
-    payload["exp"] = datetime.utcnow() + timedelta(days=7)
+    payload["exp"] = datetime.utcnow() + timedelta(days=14)
 
     return jwt.encode(
         payload,
