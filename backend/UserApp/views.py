@@ -1,4 +1,12 @@
 # views.py
+# pyrefly: ignore [missing-import]
+from .utils import check_password
+# pyrefly: ignore [missing-import]
+from .serializer import RegisterSerializer
+# pyrefly: ignore [missing-import]
+from .jwt_utils import generate_refresh_token
+# pyrefly: ignore [missing-import]
+from .jwt_utils import generate_access_token
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,7 +15,9 @@ from jwt import InvalidTokenError, ExpiredSignatureError
 from pydantic import BaseModel
 
 from backend.settings import JWT_SECRET
+# pyrefly: ignore [missing-import]
 from .jwt_utils import *
+# pyrefly: ignore [missing-import]q
 from .utils import *
 from typing import Any, Optional
 from uuid import UUID
@@ -15,9 +25,13 @@ from uuid import UUID
 # 1. IMPORT CLOUDINARY UPLOADER
 import cloudinary.uploader
 
+# pyrefly: ignore [missing-import]
 from .helper import BaseResponse
+# pyrefly: ignore [missing-import]
 from .serializer import *
+# pyrefly: ignore [missing-import]
 from .db import users_collection
+# pyrefly: ignore [missing-import]
 from .utils import hash_password
 
 class UserResponce(BaseModel):
@@ -25,6 +39,11 @@ class UserResponce(BaseModel):
     name: str
     avatar: str
     email: str
+
+
+@api_view(['GET'])
+def PingView(request):
+    return Response({"message": "Server is awake!"}, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
