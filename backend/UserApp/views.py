@@ -62,22 +62,31 @@ def RegisterView(request):
 
         if serializer.is_valid():
             data = serializer.validated_data
-            avatar = data.get('avatar')
+            
+            # Check if user already exists before doing heavy operations like Cloudinary
+            existing_user = users_collection.find_one({"email": data['email']}, {"_id": 1})
+            if existing_user:
+                return Response(
+                    {"message": "User with this email already exists"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
+            avatar = data.get('avatar')
             avatar_url = None
-            if avatar:
+            if avatar and avatar != "undefined" and hasattr(avatar, 'read'):
                 print("UPLOADING TO CLOUDINARY...")
                 try:
                     upload_result = cloudinary.uploader.upload(
                         avatar,
                         folder="avatars",
-                        resource_type="image"
+                        resource_type="image",
+                        transformation=[{"width": 400, "height": 400, "crop": "limit", "quality": "auto"}]
                     )
                     avatar_url = upload_result.get("secure_url")
                 except Exception as cloud_err:
                     print("CLOUDINARY CONFIG/UPLOAD ERROR:", str(cloud_err))
                     return Response(
-                        {"error": f"Cloudinary failed: {str(cloud_err)}. Did you set up Env variables on Render?"}, 
+                        {"error": f"Cloudinary failed: {str(cloud_err)}"}, 
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR
                     )
 
